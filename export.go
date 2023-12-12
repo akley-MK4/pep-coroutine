@@ -30,9 +30,11 @@ func InitializeLibrary(loggerInst logger.ILogger, groups ...define.CoGroup) (ret
 		}
 	}
 
-	if err := implement.RegisterCoroutineGroups(groups...); err != nil {
-		retErr = err
-		return
+	for _, g := range groups {
+		if err := implement.AddCoroutineGroupInfo(g); err != nil {
+			retErr = err
+			return
+		}
 	}
 
 	return

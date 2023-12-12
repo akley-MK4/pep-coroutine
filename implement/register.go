@@ -3,7 +3,7 @@ package implement
 import (
 	"errors"
 	"github.com/akley-MK4/pep-coroutine/define"
-	"sync/atomic"
+	"sync"
 	"time"
 )
 
@@ -12,24 +12,36 @@ type coroutineGroupInfo struct {
 }
 
 var (
-	regCoGroupMark uint32
-	coGroupInfoMap = make(map[define.CoGroup]*coroutineGroupInfo)
+	coGroupInfoMap  = make(map[define.CoGroup]*coroutineGroupInfo)
+	regGroupRWMutex sync.RWMutex
 )
 
-func getCoroutineGroupInfoMap() map[define.CoGroup]*coroutineGroupInfo {
-	return coGroupInfoMap
+func getCoroutineGroupInfo(group define.CoGroup) *coroutineGroupInfo {
+	regGroupRWMutex.RLock()
+	defer regGroupRWMutex.RUnlock()
+	return coGroupInfoMap[group]
 }
 
-func RegisterCoroutineGroups(groups ...define.CoGroup) error {
-	if !atomic.CompareAndSwapUint32(&regCoGroupMark, 0, 1) {
-		return errors.New("repeated registration")
+func GetAllRegisteredGroup() (retGroups []define.CoGroup) {
+	regGroupRWMutex.RLock()
+	defer regGroupRWMutex.RUnlock()
+
+	for g := range coGroupInfoMap {
+		retGroups = append(retGroups, g)
+	}
+	return
+}
+
+func AddCoroutineGroupInfo(group define.CoGroup) error {
+	regGroupRWMutex.Lock()
+	defer regGroupRWMutex.Unlock()
+
+	_, exist := coGroupInfoMap[group]
+	if exist {
+		return errors.New("group information already exists")
 	}
 
-	newGroupMap := make(map[define.CoGroup]*coroutineGroupInfo)
-	for _, group := range groups {
-		newGroupMap[group] = &coroutineGroupInfo{}
-	}
-	coGroupInfoMap = newGroupMap
+	coGroupInfoMap[group] = &coroutineGroupInfo{}
 	return nil
 }
 
@@ -37,7 +49,7 @@ var (
 	registerCoroutineTypesFunc = map[define.CoType]NewCoroutineFunc{
 		define.TimerCoroutineType: func(coId define.CoId, coGroup define.CoGroup, interval time.Duration,
 			handle define.CoroutineHandle, handleArgs ...interface{}) (ICoroutine, error) {
-			
+
 			co := &timerCoroutine{}
 			co.baseCoroutine = newBaseCoroutine(coId, define.TimerCoroutineType, coGroup, interval, handle, handleArgs...)
 			return co, nil

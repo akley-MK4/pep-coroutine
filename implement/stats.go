@@ -7,12 +7,14 @@ import (
 )
 
 func FetchStats() (retStats Stats) {
-	for group, groupInfo := range getCoroutineGroupInfoMap() {
+	regGroupRWMutex.RLock()
+	for group, groupInfo := range coGroupInfoMap {
 		groupStats := groupInfo.baseStatsHandler.GetStats()
 		groupStats.Group = group
 		retStats.GroupStats = append(retStats.GroupStats, groupStats)
 		retStats.CurrentMonitoredGoroutinesCount += groupStats.CurrentRunningCount
 	}
+	regGroupRWMutex.RUnlock()
 
 	retStats.CurrentGoroutinesCount = runtime.NumGoroutine()
 	retStats.CurrentUnmonitoredGoroutinesCount = retStats.CurrentGoroutinesCount - int(retStats.CurrentMonitoredGoroutinesCount)

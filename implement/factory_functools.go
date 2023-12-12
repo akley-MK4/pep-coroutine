@@ -21,8 +21,7 @@ func newCoroutineId() define.CoId {
 func CreateCoroutine(coType define.CoType, coGroup define.CoGroup, interval time.Duration,
 	handle define.CoroutineHandle, handleArgs ...interface{}) (retCo ICoroutine, retErr error) {
 
-	groupInfoMap := getCoroutineGroupInfoMap()
-	groupInfo := groupInfoMap[coGroup]
+	groupInfo := getCoroutineGroupInfo(coGroup)
 	if groupInfo == nil {
 		retErr = fmt.Errorf("unknown coroutine group %v", coGroup)
 		return
@@ -72,8 +71,7 @@ func StartCoroutine(co ICoroutine) (retErr error) {
 		return
 	}
 
-	groupInfoMap := getCoroutineGroupInfoMap()
-	groupInfo := groupInfoMap[co.GetGroup()]
+	groupInfo := getCoroutineGroupInfo(co.GetGroup())
 	if groupInfo == nil {
 		retErr = fmt.Errorf("unknown coroutine group %v", co.GetGroup())
 		return
@@ -107,8 +105,7 @@ func CloseCoroutine(co ICoroutine) (retErr error) {
 		return
 	}
 
-	groupInfoMap := getCoroutineGroupInfoMap()
-	groupInfo := groupInfoMap[co.GetGroup()]
+	groupInfo := getCoroutineGroupInfo(co.GetGroup())
 	if groupInfo == nil {
 		retErr = fmt.Errorf("unknown coroutine group %v", co.GetGroup())
 		return
@@ -178,8 +175,7 @@ func scheduleCoroutine(co ICoroutine, groupInfo *coroutineGroupInfo) {
 }
 
 func CreateAndStartStatelessCoroutine(coGroup define.CoGroup, handle define.CoroutineHandle, handleArgs ...interface{}) (retErr error) {
-	groupInfoMap := getCoroutineGroupInfoMap()
-	groupInfo := groupInfoMap[coGroup]
+	groupInfo := getCoroutineGroupInfo(coGroup)
 	if groupInfo == nil {
 		retErr = fmt.Errorf("unknown coroutine group %v", coGroup)
 		return

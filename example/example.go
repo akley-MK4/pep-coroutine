@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	coGroup1 define.CoGroup = iota + 1
-	coGroup2
-	coGroup3
-	coGroup4
+	coGroup1 = "g1"
+	coGroup2 = "g2"
+	coGroup3 = "g3"
+	coGroup4 = "g4"
 )
 
 func runExample1() (retErr error) {
