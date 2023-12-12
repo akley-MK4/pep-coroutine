@@ -24,6 +24,21 @@ func runExample1() (retErr error) {
 		return true
 	}
 
+	implement.AddCoroutineGroupInfo(coGroup2)
+	for i := 0; i < 1; i++ {
+		if err := implement.CreateAndStartStatelessCoroutine(coGroup2, func(coID define.CoId, args ...interface{}) bool {
+			time.Sleep(time.Microsecond * 1)
+			return false
+		}, 4, 5, 6); err != nil {
+			retErr = err
+			return
+		}
+	}
+	time.Sleep(5)
+	outputStats()
+
+	time.Sleep(5)
+
 	co, createCoErr := implement.CreateCoroutine(define.CoType(0), coGroup1, time.Second*2, handle, 1, 2, 3)
 	if createCoErr != nil {
 		retErr = createCoErr
@@ -48,11 +63,15 @@ func runExample1() (retErr error) {
 	//time.Sleep(time.Second * 1)
 	//return
 
-	for i := 0; i < 10; i++ {
-		if err := implement.CreateAndStartStatelessCoroutine(coGroup2, handle, 4, 5, 6); err != nil {
-			retErr = err
-			return
-		}
+	co3, createCo3Err := implement.CreateCoroutine(define.CoType(0), coGroup3, time.Second*2, handle, 1, 2, 3)
+	if createCo3Err != nil {
+		retErr = createCo3Err
+		return
+	}
+
+	if err := implement.StartCoroutine(co3); err != nil {
+		retErr = err
+		return
 	}
 
 	time.Sleep(time.Second * 5)

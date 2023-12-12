@@ -4,6 +4,7 @@ import (
 	"github.com/akley-MK4/pep-coroutine/define"
 	"runtime"
 	"sync/atomic"
+	"time"
 )
 
 func FetchStats() (retStats Stats) {
@@ -43,24 +44,32 @@ type BaseGroupStats struct {
 	TotalFailedCloseNum      uint64 `json:"totalFailedCloseNum,omitempty"`
 
 	TotalRunningDurationMilliseconds uint64 `json:"totalRunningDurationMilliseconds,omitempty"`
+	TotalRunningDurationMicroseconds uint64 `json:"totalRunningDurationMicroseconds,omitempty"`
 
 	//////////////////////////////////
 	CurrentRunningCount uint64 `json:"currentRunningCount,omitempty"`
 	//MaxRunningDuration  uint64
 	AvgRunningDurationMilliseconds uint64 `json:"avgRunningDurationMilliseconds,omitempty"`
+	AvgRunningDurationMicroseconds uint64 `json:"avgRunningDurationMicroseconds,omitempty"`
 }
 
 type baseGroupStatsHandler struct {
-	stats BaseGroupStats
+	createTime time.Time
+	stats      BaseGroupStats
 }
 
 func (t *baseGroupStatsHandler) GetStats() BaseGroupStats {
 	t.stats.TotalStoppedNum = t.stats.TotalCompletedScheduleNum + t.stats.TotalCrashedScheduleNum
+	t.stats.CurrentRunningCount = t.stats.TotalSuccessfulStartedNum - t.stats.TotalStoppedNum
 	if t.stats.TotalStoppedNum > 0 {
 		t.stats.AvgRunningDurationMilliseconds = t.stats.TotalRunningDurationMilliseconds / t.stats.TotalStoppedNum
+		t.stats.AvgRunningDurationMicroseconds = t.stats.TotalRunningDurationMicroseconds / t.stats.TotalStoppedNum
+	} else if t.stats.TotalSuccessfulStartedNum > 0 {
+		nowTime := time.Now()
+		t.stats.AvgRunningDurationMilliseconds = uint64(nowTime.UnixMilli() - t.createTime.UnixMilli())
+		t.stats.AvgRunningDurationMicroseconds = uint64(nowTime.UnixMicro() - t.createTime.UnixMicro())
 	}
 
-	t.stats.CurrentRunningCount = t.stats.TotalSuccessfulStartedNum - t.stats.TotalStoppedNum
 	return t.stats
 }
 
@@ -98,4 +107,8 @@ func (t *baseGroupStatsHandler) addTotalCompletedScheduleNum(delta uint64) {
 
 func (t *baseGroupStatsHandler) addTotalRunningDurationMilliseconds(delta uint64) {
 	atomic.AddUint64(&t.stats.TotalRunningDurationMilliseconds, delta)
+}
+
+func (t *baseGroupStatsHandler) addTotalTotalRunningDurationMicroseconds(delta uint64) {
+	atomic.AddUint64(&t.stats.TotalRunningDurationMicroseconds, delta)
 }

@@ -21,7 +21,7 @@ func newCoroutineId() define.CoId {
 func CreateCoroutine(coType define.CoType, coGroup define.CoGroup, interval time.Duration,
 	handle define.CoroutineHandle, handleArgs ...interface{}) (retCo ICoroutine, retErr error) {
 
-	groupInfo := getCoroutineGroupInfo(coGroup)
+	groupInfo := setDefaultCoroutineGroupInfo(coGroup)
 	if groupInfo == nil {
 		retErr = fmt.Errorf("unknown coroutine group %v", coGroup)
 		return
@@ -140,10 +140,10 @@ func CloseCoroutine(co ICoroutine) (retErr error) {
 
 func scheduleCoroutine(co ICoroutine, groupInfo *coroutineGroupInfo) {
 	groupInfo.baseStatsHandler.addTotalSuccessfulStartedNum(1)
-	begMilliseconds := time.Now().UnixMilli()
+	begTime := time.Now()
 
-	logger.GetLoggerInstance().DebugF("Coroutine %v starts scheduling, CoType: %v, CoGroup: %v",
-		co.GetId(), co.GetType(), co.GetGroup())
+	//logger.GetLoggerInstance().DebugF("Coroutine %v starts scheduling, CoType: %v, CoGroup: %v",
+	//	co.GetId(), co.GetType(), co.GetGroup())
 
 	statusPtr := co.getStatusPtr()
 
@@ -161,9 +161,14 @@ func scheduleCoroutine(co ICoroutine, groupInfo *coroutineGroupInfo) {
 
 		co.cleanUp()
 
-		runningDuration := time.Now().UnixMilli() - begMilliseconds
-		if runningDuration > 0 {
-			groupInfo.baseStatsHandler.addTotalRunningDurationMilliseconds(uint64(runningDuration))
+		endTime := time.Now()
+		durationMilliseconds := endTime.UnixMilli() - begTime.UnixMilli()
+		if durationMilliseconds > 0 {
+			groupInfo.baseStatsHandler.addTotalRunningDurationMilliseconds(uint64(durationMilliseconds))
+		}
+		durationMicroseconds := endTime.UnixMicro() - begTime.UnixMicro()
+		if durationMicroseconds > 0 {
+			groupInfo.baseStatsHandler.addTotalTotalRunningDurationMicroseconds(uint64(durationMicroseconds))
 		}
 	}()
 
@@ -171,11 +176,11 @@ func scheduleCoroutine(co ICoroutine, groupInfo *coroutineGroupInfo) {
 	co.run()
 	atomic.StoreUint32(statusPtr, uint32(define.CompletedCoroutineStatus))
 
-	logger.GetLoggerInstance().DebugF("Coroutine %v exit scheduling, CoType: %v, CoGroup: %v", co.GetId(), co.GetType(), co.GetGroup())
+	//logger.GetLoggerInstance().DebugF("Coroutine %v exit scheduling, CoType: %v, CoGroup: %v", co.GetId(), co.GetType(), co.GetGroup())
 }
 
 func CreateAndStartStatelessCoroutine(coGroup define.CoGroup, handle define.CoroutineHandle, handleArgs ...interface{}) (retErr error) {
-	groupInfo := getCoroutineGroupInfo(coGroup)
+	groupInfo := setDefaultCoroutineGroupInfo(coGroup)
 	if groupInfo == nil {
 		retErr = fmt.Errorf("unknown coroutine group %v", coGroup)
 		return
@@ -201,8 +206,8 @@ func CreateAndStartStatelessCoroutine(coGroup define.CoGroup, handle define.Coro
 
 func scheduleStatelessCoroutine(coId define.CoId, coGroup define.CoGroup, groupInfo *coroutineGroupInfo, handle define.CoroutineHandle, handleArgs ...interface{}) {
 	groupInfo.baseStatsHandler.addTotalSuccessfulStartedNum(1)
-	begMilliseconds := time.Now().UnixMilli()
-	logger.GetLoggerInstance().DebugF("Coroutine %v starts scheduling, CoType: Stateless, CoGroup: %v", coId, coGroup)
+	begTime := time.Now()
+	//logger.GetLoggerInstance().DebugF("Coroutine %v starts scheduling, CoType: Stateless, CoGroup: %v", coId, coGroup)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -213,12 +218,17 @@ func scheduleStatelessCoroutine(coId define.CoId, coGroup define.CoGroup, groupI
 			groupInfo.baseStatsHandler.addTotalCompletedScheduleNum(1)
 		}
 
-		runningDuration := time.Now().UnixMilli() - begMilliseconds
-		if runningDuration > 0 {
-			groupInfo.baseStatsHandler.addTotalRunningDurationMilliseconds(uint64(runningDuration))
+		endTime := time.Now()
+		durationMilliseconds := endTime.UnixMilli() - begTime.UnixMilli()
+		if durationMilliseconds > 0 {
+			groupInfo.baseStatsHandler.addTotalRunningDurationMilliseconds(uint64(durationMilliseconds))
+		}
+		durationMicroseconds := endTime.UnixMicro() - begTime.UnixMicro()
+		if durationMicroseconds > 0 {
+			groupInfo.baseStatsHandler.addTotalTotalRunningDurationMicroseconds(uint64(durationMicroseconds))
 		}
 	}()
 
 	handle(coId, handleArgs...)
-	logger.GetLoggerInstance().DebugF("Coroutine %v exit scheduling, CoType: Stateless, CoGroup: %v", coId, coGroup)
+	//logger.GetLoggerInstance().DebugF("Coroutine %v exit scheduling, CoType: Stateless, CoGroup: %v", coId, coGroup)
 }

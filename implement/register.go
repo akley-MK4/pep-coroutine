@@ -22,6 +22,17 @@ func getCoroutineGroupInfo(group define.CoGroup) *coroutineGroupInfo {
 	return coGroupInfoMap[group]
 }
 
+func setDefaultCoroutineGroupInfo(group define.CoGroup) *coroutineGroupInfo {
+	regGroupRWMutex.Lock()
+	defer regGroupRWMutex.Unlock()
+	_, exist := coGroupInfoMap[group]
+	if !exist {
+		coGroupInfoMap[group] = &coroutineGroupInfo{}
+		coGroupInfoMap[group].baseStatsHandler.createTime = time.Now()
+	}
+	return coGroupInfoMap[group]
+}
+
 func GetAllRegisteredGroup() (retGroups []define.CoGroup) {
 	regGroupRWMutex.RLock()
 	defer regGroupRWMutex.RUnlock()
@@ -42,6 +53,7 @@ func AddCoroutineGroupInfo(group define.CoGroup) error {
 	}
 
 	coGroupInfoMap[group] = &coroutineGroupInfo{}
+	coGroupInfoMap[group].baseStatsHandler.createTime = time.Now()
 	return nil
 }
 
